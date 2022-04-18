@@ -1,7 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS 
 #include <stdio.h>
-#include <math.h> 
 #include <cstdio>
+#include <stdarg.h>
 
 const int N = 24; // Количество чисел в файле
 
@@ -11,435 +11,145 @@ void create_txt(const char* a); // Создание текстового фай�
 
 void create_bin(const char* a); // Создание бинарного файла данных, ввод чисел с клавиатуры
 
-void concat_files(DAT_FILE_SIGNATURE _, const char* result_file, const char* fname, ...); // Копирование данных из текстовых файлов в один (файл-результат)
+void concat_files(const char* file_type, const char* result_file, const char* fname, ...); // Копирование данных из текстовых файлов в один (файл-результат)
 
-void concat_files(BIN_FILE_SIGNATURE _, const char* result_file, const char* fname, ...); // Копирование данных из бинарных файлов в один (файл-результат)
+void concat_files(const char* file_type, const char* result_file, const char* fname, ...); // Копирование данных из бинарных файлов в один (файл-результат)
 
 void incr(const char* file_type, const char* f); // Вызов сортировки по возрастанию для текстовых\бинарных файлов
 
 void decr(const char* file_type, const char* f); // Вызов сортировки по убыванию для текстовых\бинарных файлов
 
+typedef void (*MENU)(const char*, const char*); // Массив указателей на функции
+
 void menu(const char* f, const char* file_type); // Меню для выбора типа сортировки
 
-template <typename FT, typename DT>
+int file_read(FILE* A, const char* file_type, const char* format, int* buff); // Чтение целых чисел из бинарных / текстовых файлов
 
-int vnsort1_decr(FT ftype, DT dtype, const char* ff)// фаза разделения серий
-{
-    FILE* A, * B, * C; /* файловые переменные */
-    /* файлы "B", "C" в функциях - временные */
-    DT a1, a2;
-    int pb, pc; /* признаки записи в файлы разделения */
-    int p; /* p=1 - признак достижения конца исходного файла */
-    while (1)  /* цикл 1, цикл повторения фаз разделения и слияния */
-    /* Подготовительные операции */
-    {
-        if ((A = fopen(ff, "r")) == NULL)
-        {
-            printf("\n Файл %s не открывается", ff);
-            system("pause");
-            return -1;
-        }
-        if ((B = fopen("B", "w")) == NULL)
-        {
-            printf("\n Файл B не открывается");
-            system("pause");
-            return -1;
-        }
-        if ((C = fopen("C", "w")) == NULL)
-        {
-            printf("\n Файл C не открывается");
-            system("pause");
-            return -1;
-        }
-        p = 0;
-        pb = 0;
-        pc = 0;
+int file_read(FILE* A, const char* file_type, const char* format, float* buff); // Чтение вещественных чисел из бинарных / текстовых файлов
 
-        if (fscanf(A, "%d", &a1) == EOF)
-        {
-            printf("\n Сортируемый файл - пустой");
-            system("pause");
-            return -1;
-        }
-        else
-        {
-            fprintf(B, " %d", a1);
-            pb = 1;
-        }
-        while (1) /* цикл 2, цикл формирования серий в файлах В и С */
-        {
-            while (1) /* цикл 3, цикл формирования серии в файле В */
-            {
-                if (fscanf(A, "%d", &a2) == EOF)
-                {
-                    p = 1; break; /* выход из цикла 3 */
-                }
-                else
-                {
-                    if (a2 <= a1)  /* запишем в серию в файле В */
-                    {
-                        fprintf(B, " %d", a2);
-                        a1 = a2;
-                        pb = 1;
-                        continue;
-                    }
-                    else /* запишем первую запись новой серии в файле С */
-                    {
-                        fprintf(C, " %d", a2);
-                        a1 = a2;
-                        pc = 1;
-                        break; /* выход из цикла 3 */
-                    }
-                }
-            }
-            if (p)
-                break;  /* выход из цикла 2 */
-            while (1) /* цикл 4, формирование серии в файле С */
-            {
-                if (fscanf(A, "%d", &a2) == EOF)
-                {
-                    p = 1;
-                    break; /* выход из цикла 4 */
-                }
-                else
-                {
-                    if (a2 <= a1)  /* запишем в серию в файле С */
-                    {
-                        fprintf(C, " %d", a2);
-                        a1 = a2;
-                        pc = 1;
-                        continue;
-                    }
-                    else
-                    {
-                        fprintf(B, " %d", a2);
-                        a1 = a2;
-                        pb = 1;
-                        break; /* выход из цикла 4 */
-                    }
-                }
-            }
-            if (p)
-                break; /* выход из цикла 2 */
-        }
-        fclose(A);
-        fclose(B);
-        fclose(C);
-        if (pb && pc)  /* исходный файл записан в оба файла разделения */
-            vnsort2_decr(DAT_FILE, INT_VAL, ff);  /* вызов функции слияния */
-        else
-        { /* Удаление вспомогательных файлов */
-            remove("B"); remove("C");
-            return 0;  /* конец сортировки */
-        }
-    }
-}
+void file_write(FILE* A, const char* file_type, const char* format, int buff); // Запись целых чисел в бинарные / тектовые файлы
 
-int vnsort2_decr(FILE_TYPE, DATA_TYPE, const char* a)// фаза слияния
-int vnsort1_incr(FILE_TYPE, DATA_TYPE, const char* ff);  
-int vnsort2_incr(FILE_TYPE, DATA_TYPE, const char* a);  
-int vnsort1_decr(FILE_TYPE, DATA_TYPE, const char* ff);  
-int vnsort2_decr(FILE_TYPE, DATA_TYPE, const char* a);   
+void file_write(FILE* A, const char* file_type, const char* format, float* buff); // Запись вещественных чисел в бинарные / текстовые файлы
+
+void print_txt(const char* file_name);
+
+template <typename DATA_TYPE>
+int vnsort1_decr(const char* file_type, const char* ff); // Сортировка по убыванию для текстовых / бинарных файлов, целых / вещественных чисел
+template <typename DATA_TYPE> 
+int vnsort2_decr(const char* file_type, const char* a); 
+
+template <typename DATA_TYPE> 
+int vnsort1_incr(const char* file_type, const char* ff); // Сортировка по возрастанию для текстовых / бинарных файлов, целых / вещественных чисел
+template <typename DATA_TYPE> 
+int vnsort2_incr(const char* file_type, const char* a);
 
 int main()
 {
-    concat_files(DAT_FILE, "i_result.dat", "i_1.dat", "i_2.dat", NULL);
+    concat_files("dat", "i_result.dat", "i_1.dat", "i_2.dat", NULL);
     menu("i_result.dat", "dat");
+    print_txt("i_result.dat");
+    //print_bin("f_result.bin");
     return 0;
 }
 
-int vnsort1_incr(DAT_FILE_SIGNATURE _, INT_SIGNATURE, const char* ff)// фаза разделения серий
+int file_read(FILE* A, const char* file_type, const char* format, int* buff) {
+    if (file_type == "dat") {
+        if (fscanf(A, format, buff) == EOF) return EOF;
+    }
+    else {
+        if (!fread(buff, sizeof(int), 1, A)) return EOF;
+    }
+    return 1;
+}
+
+void file_write(FILE* A, const char* file_type, const char* format, int buff) {
+    if (file_type == "dat") fprintf(A, format, buff);
+    else fwrite(&buff, sizeof(int), 1, A);
+}
+
+int file_read(FILE* A, const char* file_type, const char* format, float* buff) {
+    if (file_type == "dat") {
+        if (fscanf(A, format, buff) == EOF) return EOF;
+    }
+    else {
+        if (!fread(buff, sizeof(float), 1, A)) return EOF;
+    }
+    return 1;
+}
+
+void file_write(FILE* A, const char* file_type, const char* format, float buff) {
+    if (file_type == "dat") fprintf(A, format, buff);
+    else fwrite(&buff, sizeof(float), 1, A);
+}
+
+template <typename DATA_TYPE> 
+int vnsort1_decr(const char* file_type, const char* ff)
 {
     FILE* A, * B, * C; /* файловые переменные */
     /* файлы "B", "C" в функциях - временные */
-    int a1, a2;
+    DATA_TYPE a1, a2;
     int pb, pc; /* признаки записи в файлы разделения */
     int p; /* p=1 - признак достижения конца исходного файла */
+    const char* read_sign;
+    const char* write_sign;
+
+    if (file_type == "dat") {
+        read_sign = "r";
+        write_sign = "w";
+    }
+    else {
+        read_sign = "rb";
+        write_sign = "wb";
+    }
+
     while (1)  /* цикл 1, цикл повторения фаз разделения и слияния */
     /* Подготовительные операции */
     {
-        if ((A = fopen(ff, "r")) == NULL)
+        if ((A = fopen(ff, read_sign)) == NULL)
         {
             printf("\n Файл %s не открывается", ff);
-            system("pause");
             return -1;
         }
-        if ((B = fopen("B", "w")) == NULL)
+        if ((B = fopen("B", write_sign)) == NULL)
         {
             printf("\n Файл B не открывается");
-            system("pause");
             return -1;
         }
-        if ((C = fopen("C", "w")) == NULL)
+        if ((C = fopen("C", write_sign)) == NULL)
         {
             printf("\n Файл C не открывается");
-            system("pause");
             return -1;
         }
         p = 0;
         pb = 0;
         pc = 0;
+        const char* format;
+        const char* format_with_space;
 
-        if (fscanf(A, "%d", &a1) == EOF)
+        if (ff[0] == 'i') {
+            format = "%d";
+            format_with_space = " %d";
+        }
+        else {
+            format = "%f";
+            format_with_space = " %f";
+        }
+        
+        if (file_read(A, file_type, format, &a1) == EOF)
         {
             printf("\n Сортируемый файл - пустой");
-            system("pause");
             return -1;
         }
         else
         {
-            fprintf(B, " %d", a1);
+            file_write(B, file_type, format_with_space, a1);
             pb = 1;
         }
         while (1) /* цикл 2, цикл формирования серий в файлах В и С */
         {
             while (1) /* цикл 3, цикл формирования серии в файле В */
             {
-                if (fscanf(A, "%d", &a2) == EOF)
-                {
-                    p = 1; break; /* выход из цикла 3 */
-                }
-                else
-                {
-                    if (a2 >= a1)  /* запишем в серию в файле В */
-                    {
-                        fprintf(B, " %d", a2);
-                        a1 = a2;
-                        pb = 1;
-                        continue;
-                    }
-                    else /* запишем первую запись новой серии в файле С */
-                    {
-                        fprintf(C, " %d", a2);
-                        a1 = a2;
-                        pc = 1;
-                        break; /* выход из цикла 3 */
-                    }
-                }
-            }
-            if (p)
-                break;  /* выход из цикла 2 */
-            while (1) /* цикл 4, формирование серии в файле С */
-            {
-                if (fscanf(A, "%d", &a2) == EOF)
-                {
-                    p = 1;
-                    break; /* выход из цикла 4 */
-                }
-                else
-                {
-                    if (a2 >= a1)  /* запишем в серию в файле С */
-                    {
-                        fprintf(C, " %d", a2);
-                        a1 = a2;
-                        pc = 1;
-                        continue;
-                    }
-                    else
-                    {
-                        fprintf(B, " %d", a2);
-                        a1 = a2;
-                        pb = 1;
-                        break; /* выход из цикла 4 */
-                    }
-                }
-            }
-            if (p)
-                break; /* выход из цикла 2 */
-        }
-        fclose(A);
-        fclose(B);
-        fclose(C);
-        if (pb && pc)  /* исходный файл записан в оба файла разделения */
-            vnsort2_incr(DAT_FILE, INT_VAL, ff);  /* вызов функции слияния */
-        else
-        { /* Удаление вспомогательных файлов */
-            remove("B"); remove("C");
-            return 0;  /* конец сортировки */
-        }
-    }
-}
-int vnsort2_incr(DAT_FILE_SIGNATURE _, INT_SIGNATURE, const char* a)// фаза слияния
-{
-    bool flag;
-    FILE* A, * B, * C; /* файловые переменные */
-    int b1, b2, c1, c2; /* для считывания данных из файлов В и С */
-    int rb, rc; /* коды завершения операции считывания из файлов В и С*/
-    /* Подготовительные операции */
-    if ((A = fopen(a, "w")) == NULL)
-    {
-        printf("\n Файл %s не открывается", a);
-        system("pause");
-        return -1;
-    }
-    if ((B = fopen("B", "r")) == NULL)
-    {
-        printf("\n Файл B не открывается");
-        system("pause");
-        return -1;
-    }
-    if ((C = fopen("C", "r")) == NULL)
-    {
-        printf("\n Файл C не открывается");
-        system("pause");
-        return -1;
-    }
-
-    rb = fscanf(B, "%d", &b2);
-    rc = fscanf(C, "%d", &c2);
-    b1 = b2;
-    c1 = c2;
-    while (1)
-    {
-        if ((rb > 0) && (rc <= 0))    // файл С закончился
-        {
-            fprintf(A, " %d", b2);
-            while (fscanf(B, "%d", &b2) > 0)
-                fprintf(A, " %d", b2);
-            fclose(A);
-            fclose(B);
-            fclose(C);
-            return 0;
-        }
-        else if ((rb <= 0) && (rc > 0)) // файл B закончился
-        {
-            fprintf(A, " %d", c2);
-            while (fscanf(C, "%d", &c2) > 0)
-                fprintf(A, " %d", c2);
-            fclose(A);
-            fclose(B);
-            fclose(C);
-            return 0;
-        }
-        else if ((rb <= 0) && (rc <= 0)) // оба файла закончились
-        {
-            fclose(A);
-            fclose(B);
-            fclose(C);
-            return 0;
-        }
-
-        if ((b2 >= b1) && (c2 >= c1)) /* обе сливаемые серии не исчерпаны */
-        {
-            if (b2 <= c2)
-            {
-                fprintf(A, " %d", b2); b1 = b2;
-                rb = fscanf(B, "%d", &b2);
-                continue;
-            }
-            else
-            {
-                fprintf(A, " %d", c2);
-                c1 = c2;
-                rc = fscanf(C, "%d", &c2);
-                continue;
-            }
-        }
-
-        if ((b2 >= b1) && (c2 < c1)) // серия файла C кончилась 
-        {
-            c1 = c2;
-            flag = false;
-            do
-            {
-                fprintf(A, " %d", b2);
-                b1 = b2;
-                rb = fscanf(B, "%d", &b2);
-                if (rb <= 0)
-                {
-                    flag = true;
-                    break;
-                }
-                if (b2 < b1)
-                {
-                    b1 = b2;
-                    flag = true;
-                    break;
-                }
-                if (flag == true)
-                    break;
-            } while (1);
-            if (flag == true)
-                continue;
-        }
-        if ((b2 < b1) && (c2 >= c1)) // серия файла B кончилась
-        {
-            b1 = b2;
-            flag = false;
-            do
-            {
-                fprintf(A, " %d", c2);
-                c1 = c2;
-                rc = fscanf(C, "%d", &c2);
-                if (rc <= 0)
-                {
-                    flag = true;
-                    break;
-                }
-                if (c2 < c1)
-                {
-                    c1 = c2;
-                    flag = true;
-                    break;
-                }
-                if (flag == true)
-                    break;
-            } while (1);
-            if (flag == true)
-                continue;
-        }
-
-    }
-}
-
-int vnsort1_decr(DAT_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* ff)// фаза разделения серий
-{
-    FILE* A, * B, * C; /* файловые переменные */
-    /* файлы "B", "C" в функциях - временные */
-    float a1, a2;
-    int pb, pc; /* признаки записи в файлы разделения */
-    int p; /* p=1 - признак достижения конца исходного файла */
-    while (1)  /* цикл 1, цикл повторения фаз разделения и слияния */
-    /* Подготовительные операции */
-    {
-        if ((A = fopen(ff, "r")) == NULL)
-        {
-            printf("\n Файл %s не открывается", ff);
-            system("pause");
-            return -1;
-        }
-        if ((B = fopen("B", "w")) == NULL)
-        {
-            printf("\n Файл B не открывается");
-            system("pause");
-            return -1;
-        }
-        if ((C = fopen("C", "w")) == NULL)
-        {
-            printf("\n Файл C не открывается");
-            system("pause");
-            return -1;
-        }
-        p = 0;
-        pb = 0;
-        pc = 0;
-
-        if (fscanf(A, "%f", &a1) == EOF)
-        {
-            printf("\n Сортируемый файл - пустой");
-            system("pause");
-            return -1;
-        }
-        else
-        {
-            fprintf(B, " %f", a1);
-            pb = 1;
-        }
-        while (1) /* цикл 2, цикл формирования серий в файлах В и С */
-        {
-            while (1) /* цикл 3, цикл формирования серии в файле В */
-            {
-                if (fscanf(A, " %f", &a2) == EOF)
+                if (file_read(A, file_type, format, &a2) == EOF)
                 {
                     p = 1; break; /* выход из цикла 3 */
                 }
@@ -447,14 +157,14 @@ int vnsort1_decr(DAT_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* ff)// фаз
                 {
                     if (a2 <= a1)  /* запишем в серию в файле В */
                     {
-                        fprintf(B, " %f", a2);
+                        file_write(B, file_type, format_with_space, a2);
                         a1 = a2;
                         pb = 1;
                         continue;
                     }
                     else /* запишем первую запись новой серии в файле С */
                     {
-                        fprintf(C, " %f", a2);
+                        file_write(C, file_type, format_with_space, a2);
                         a1 = a2;
                         pc = 1;
                         break; /* выход из цикла 3 */
@@ -465,7 +175,7 @@ int vnsort1_decr(DAT_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* ff)// фаз
                 break;  /* выход из цикла 2 */
             while (1) /* цикл 4, формирование серии в файле С */
             {
-                if (fscanf(A, "%f", &a2) == EOF)
+                if (file_read(A, file_type, format, &a2) == EOF)
                 {
                     p = 1;
                     break; /* выход из цикла 4 */
@@ -474,14 +184,14 @@ int vnsort1_decr(DAT_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* ff)// фаз
                 {
                     if (a2 <= a1)  /* запишем в серию в файле С */
                     {
-                        fprintf(C, " %f", a2);
+                        file_write(C, file_type, format_with_space, a2);
                         a1 = a2;
                         pc = 1;
                         continue;
                     }
                     else
                     {
-                        fprintf(B, " %f", a2);
+                        file_write(B, file_type, format_with_space, a2);
                         a1 = a2;
                         pb = 1;
                         break; /* выход из цикла 4 */
@@ -494,8 +204,10 @@ int vnsort1_decr(DAT_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* ff)// фаз
         fclose(A);
         fclose(B);
         fclose(C);
-        if (pb && pc)  /* исходный файл записан в оба файла разделения */
-            vnsort2_decr(DAT_FILE, FLOAT_VAL, ff);  /* вызов функции слияния */
+        if (pb && pc) /* исходный файл записан в оба файла разделения */
+            if (ff[0] == 'i') vnsort2_decr<int>(file_type, ff);  /* вызов функции слияния */
+            else vnsort2_decr<float>(file_type, ff);
+
         else
         { /* Удаление вспомогательных файлов */
             remove("B"); remove("C");
@@ -503,43 +215,66 @@ int vnsort1_decr(DAT_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* ff)// фаз
         }
     }
 }
-int vnsort2_decr(DAT_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* a)// фаза слияния
+template <typename DATA_TYPE> 
+int vnsort2_decr(const char* file_type, const char* a)
 {
     bool flag;
     FILE* A, * B, * C; /* файловые переменные */
-    float b1, b2, c1, c2; /* для считывания данных из файлов В и С */
+    DATA_TYPE b1, b2, c1, c2; /* для считывания данных из файлов В и С */
     int rb, rc; /* коды завершения операции считывания из файлов В и С*/
     /* Подготовительные операции */
-    if ((A = fopen(a, "w")) == NULL)
+
+    const char* read_sign;
+    const char* write_sign;
+
+    if (file_type == "dat") {
+        read_sign = "r";
+        write_sign = "w";
+    }
+    else {
+        read_sign = "rb";
+        write_sign = "wb";
+    }
+
+    if ((A = fopen(a, write_sign)) == NULL)
     {
         printf("\n Файл %s не открывается", a);
-        system("pause");
         return -1;
     }
-    if ((B = fopen("B", "r")) == NULL)
+    if ((B = fopen("B", read_sign)) == NULL)
     {
         printf("\n Файл B не открывается");
-        system("pause");
         return -1;
     }
-    if ((C = fopen("C", "r")) == NULL)
+    if ((C = fopen("C", read_sign)) == NULL)
     {
         printf("\n Файл C не открывается");
-        system("pause");
         return -1;
     }
 
-    rb = fscanf(B, "%f", &b2);
-    rc = fscanf(C, "%f", &c2);
+    const char* format;
+    const char* format_with_space;
+
+    if (a[0] == 'i') {
+        format = "%d";
+        format_with_space = " %d";
+    }
+    else {
+        format = "%f";
+        format_with_space = " %f";
+    }
+
+    rb = file_read(B, file_type, format, &b2);
+    rc = file_read(C, file_type, format, &c2);
     b1 = b2;
     c1 = c2;
     while (1)
     {
         if ((rb > 0) && (rc <= 0))    // файл С закончился
         {
-            fprintf(A, " %f", b2);
-            while (fscanf(B, "%f", &b2) > 0)
-                fprintf(A, " %f", b2);
+            file_write(A, file_type, format_with_space, b2);
+            while (file_read(B, file_type, format, &b2) > 0)
+                file_write(A, file_type, format_with_space, b2);
             fclose(A);
             fclose(B);
             fclose(C);
@@ -547,9 +282,9 @@ int vnsort2_decr(DAT_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* a)// фаз�
         }
         else if ((rb <= 0) && (rc > 0)) // файл B закончился
         {
-            fprintf(A, " %f", c2);
-            while (fscanf(C, "%f", &c2) > 0)
-                fprintf(A, " %f", c2);
+            file_write(A, file_type, format_with_space, c2);
+            while (file_read(C, file_type, format, &c2) > 0)
+                file_write(A, file_type, format_with_space, c2);
             fclose(A);
             fclose(B);
             fclose(C);
@@ -567,15 +302,15 @@ int vnsort2_decr(DAT_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* a)// фаз�
         {
             if (b2 >= c2)
             {
-                fprintf(A, " %f", b2); b1 = b2;
-                rb = fscanf(B, "%f", &b2);
+                file_write(A, file_type, format_with_space, b2); b1 = b2;
+                rb = file_read(B, file_type, format, &b2);
                 continue;
             }
             else
             {
-                fprintf(A, " %f", c2);
+                file_write(A, file_type, format_with_space, c2);
                 c1 = c2;
-                rc = fscanf(C, "%f", &c2);
+                rc = file_read(C, file_type, format, &c2);
                 continue;
             }
         }
@@ -586,9 +321,9 @@ int vnsort2_decr(DAT_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* a)// фаз�
             flag = false;
             do
             {
-                fprintf(A, " %f", b2);
+                file_write(A, file_type, format_with_space, b2);
                 b1 = b2;
-                rb = fscanf(B, "%f", &b2);
+                rb = file_read(B, file_type, format, &b2);
                 if (rb <= 0)
                 {
                     flag = true;
@@ -612,9 +347,9 @@ int vnsort2_decr(DAT_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* a)// фаз�
             flag = false;
             do
             {
-                fprintf(A, " %f", c2);
+                file_write(A, file_type, format_with_space, c2);
                 c1 = c2;
-                rc = fscanf(C, "%f", &c2);
+                rc = file_read(C, file_type, format, &c2);
                 if (rc <= 0)
                 {
                     flag = true;
@@ -632,58 +367,77 @@ int vnsort2_decr(DAT_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* a)// фаз�
             if (flag == true)
                 continue;
         }
-
     }
 }
 
-int vnsort1_incr(DAT_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* ff)// фаза разделения серий
+template <typename DATA_TYPE>
+int vnsort1_incr(const char* file_type, const char* ff)
 {
     FILE* A, * B, * C; /* файловые переменные */
     /* файлы "B", "C" в функциях - временные */
-    float a1, a2;
+    DATA_TYPE a1, a2;
     int pb, pc; /* признаки записи в файлы разделения */
     int p; /* p=1 - признак достижения конца исходного файла */
+    const char* read_sign;
+    const char* write_sign;
+
+    if (file_type == "dat") {
+        read_sign = "r";
+        write_sign = "w";
+    }
+    else {
+        read_sign = "rb";
+        write_sign = "wb";
+    }
+
     while (1)  /* цикл 1, цикл повторения фаз разделения и слияния */
     /* Подготовительные операции */
     {
-        if ((A = fopen(ff, "r")) == NULL)
+        if ((A = fopen(ff, read_sign)) == NULL)
         {
             printf("\n Файл %s не открывается", ff);
-            system("pause");
             return -1;
         }
-        if ((B = fopen("B", "w")) == NULL)
+        if ((B = fopen("B", write_sign)) == NULL)
         {
             printf("\n Файл B не открывается");
-            system("pause");
             return -1;
         }
-        if ((C = fopen("C", "w")) == NULL)
+        if ((C = fopen("C", write_sign)) == NULL)
         {
             printf("\n Файл C не открывается");
-            system("pause");
             return -1;
         }
         p = 0;
         pb = 0;
         pc = 0;
+        const char* format;
+        const char* format_with_space;
 
-        if (fscanf(A, "%f", &a1) == EOF)
+        if (ff[0] == 'i') {
+            format = "%d";
+            format_with_space = " %d";
+        }
+        else {
+            format = "%f";
+            format_with_space = " %f";
+        }
+        
+        if (file_read(A, file_type, format, &a1) == EOF)
         {
             printf("\n Сортируемый файл - пустой");
-            system("pause");
             return -1;
         }
         else
         {
-            fprintf(B, " %f", a1);
+            file_write(B, file_type, format_with_space, a1);
             pb = 1;
         }
         while (1) /* цикл 2, цикл формирования серий в файлах В и С */
         {
             while (1) /* цикл 3, цикл формирования серии в файле В */
             {
-                if (fscanf(A, "%f", &a2) == EOF)
+                if (file_read(A, file_type, format, &a2) == EOF)
                 {
                     p = 1; break; /* выход из цикла 3 */
                 }
@@ -691,14 +445,14 @@ int vnsort1_incr(DAT_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* ff)// фаз
                 {
                     if (a2 >= a1)  /* запишем в серию в файле В */
                     {
-                        fprintf(B, " %f", a2);
+                        file_write(B, file_type, format_with_space, a2);
                         a1 = a2;
                         pb = 1;
                         continue;
                     }
                     else /* запишем первую запись новой серии в файле С */
                     {
-                        fprintf(C, " %f", a2);
+                        file_write(C, file_type, format_with_space, a2);
                         a1 = a2;
                         pc = 1;
                         break; /* выход из цикла 3 */
@@ -709,7 +463,7 @@ int vnsort1_incr(DAT_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* ff)// фаз
                 break;  /* выход из цикла 2 */
             while (1) /* цикл 4, формирование серии в файле С */
             {
-                if (fscanf(A, "%f", &a2) == EOF)
+                if (file_read(A, file_type, format, &a2) == EOF)
                 {
                     p = 1;
                     break; /* выход из цикла 4 */
@@ -718,14 +472,14 @@ int vnsort1_incr(DAT_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* ff)// фаз
                 {
                     if (a2 >= a1)  /* запишем в серию в файле С */
                     {
-                        fprintf(C, " %f", a2);
+                        file_write(C, file_type, format_with_space, a2);
                         a1 = a2;
                         pc = 1;
                         continue;
                     }
                     else
                     {
-                        fprintf(B, " %f", a2);
+                        file_write(B, file_type, format_with_space, a2);
                         a1 = a2;
                         pb = 1;
                         break; /* выход из цикла 4 */
@@ -738,8 +492,10 @@ int vnsort1_incr(DAT_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* ff)// фаз
         fclose(A);
         fclose(B);
         fclose(C);
-        if (pb && pc)  /* исходный файл записан в оба файла разделения */
-            vnsort2_incr(DAT_FILE, FLOAT_VAL, ff);  /* вызов функции слияния */
+        if (pb && pc) /* исходный файл записан в оба файла разделения */
+            if (ff[0] == 'i') vnsort2_incr<int>(file_type, ff);  /* вызов функции слияния */
+            else vnsort2_incr<float>(file_type, ff);
+
         else
         { /* Удаление вспомогательных файлов */
             remove("B"); remove("C");
@@ -747,43 +503,67 @@ int vnsort1_incr(DAT_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* ff)// фаз
         }
     }
 }
-int vnsort2_incr(DAT_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* a)// фаза слияния
+
+template <typename DATA_TYPE> 
+int vnsort2_incr(const char* file_type, const char* a)
 {
     bool flag;
     FILE* A, * B, * C; /* файловые переменные */
-    float b1, b2, c1, c2; /* для считывания данных из файлов В и С */
+    DATA_TYPE b1, b2, c1, c2; /* для считывания данных из файлов В и С */
     int rb, rc; /* коды завершения операции считывания из файлов В и С*/
     /* Подготовительные операции */
-    if ((A = fopen(a, "w")) == NULL)
+
+    const char* read_sign;
+    const char* write_sign;
+
+    if (file_type == "dat") {
+        read_sign = "r";
+        write_sign = "w";
+    }
+    else {
+        read_sign = "rb";
+        write_sign = "wb";
+    }
+
+    if ((A = fopen(a, write_sign)) == NULL)
     {
         printf("\n Файл %s не открывается", a);
-        system("pause");
         return -1;
     }
-    if ((B = fopen("B", "r")) == NULL)
+    if ((B = fopen("B", read_sign)) == NULL)
     {
         printf("\n Файл B не открывается");
-        system("pause");
         return -1;
     }
-    if ((C = fopen("C", "r")) == NULL)
+    if ((C = fopen("C", read_sign)) == NULL)
     {
         printf("\n Файл C не открывается");
-        system("pause");
         return -1;
     }
 
-    rb = fscanf(B, "%f", &b2);
-    rc = fscanf(C, "%f", &c2);
+    const char* format;
+    const char* format_with_space;
+
+    if (a[0] == 'i') {
+        format = "%i";
+        format_with_space = " %i";
+    }
+    else {
+        format = "%f";
+        format_with_space = " %f";
+    }
+
+    rb = file_read(B, file_type, format, &b2);
+    rc = file_read(C, file_type, format, &c2);
     b1 = b2;
     c1 = c2;
     while (1)
     {
         if ((rb > 0) && (rc <= 0))    // файл С закончился
         {
-            fprintf(A, " %f", b2);
-            while (fscanf(B, "%f", &b2) > 0)
-                fprintf(A, " %f", b2);
+            file_write(A, file_type, format_with_space, b2);
+            while (file_read(B, file_type, format, &b2) > 0)
+                file_write(A, file_type, format_with_space, b2);
             fclose(A);
             fclose(B);
             fclose(C);
@@ -791,9 +571,9 @@ int vnsort2_incr(DAT_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* a)// фаз�
         }
         else if ((rb <= 0) && (rc > 0)) // файл B закончился
         {
-            fprintf(A, " %f", c2);
-            while (fscanf(C, "%f", &c2) > 0)
-                fprintf(A, " %f", c2);
+            file_write(A, file_type, format_with_space, c2);
+            while (file_read(C, file_type, format, &c2) > 0)
+                file_write(A, file_type, format_with_space, c2);
             fclose(A);
             fclose(B);
             fclose(C);
@@ -811,262 +591,15 @@ int vnsort2_incr(DAT_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* a)// фаз�
         {
             if (b2 <= c2)
             {
-                fprintf(A, " %f", b2); b1 = b2;
-                rb = fscanf(B, "%f", &b2);
+                file_write(A, file_type, format_with_space, b2); b1 = b2;
+                rb = file_read(B, file_type, format, &b2);
                 continue;
             }
             else
             {
-                fprintf(A, " %f", c2);
+                file_write(A, file_type, format_with_space, c2);
                 c1 = c2;
-                rc = fscanf(C, "%f", &c2);
-                continue;
-            }
-        }
-
-        if ((b2 >= b1) && (c2 < c1)) // серия файла C кончилась 
-        {
-            c1 = c2;
-            flag = false;
-            do
-            {
-                fprintf(A, " %f", b2);
-                b1 = b2;
-                rb = fscanf(B, "%f", &b2);
-                if (rb <= 0)
-                {
-                    flag = true;
-                    break;
-                }
-                if (b2 < b1)
-                {
-                    b1 = b2;
-                    flag = true;
-                    break;
-                }
-                if (flag == true)
-                    break;
-            } while (1);
-            if (flag == true)
-                continue;
-        }
-        if ((b2 < b1) && (c2 >= c1)) // серия файла B кончилась
-        {
-            b1 = b2;
-            flag = false;
-            do
-            {
-                fprintf(A, " %f", c2);
-                c1 = c2;
-                rc = fscanf(C, "%f", &c2);
-                if (rc <= 0)
-                {
-                    flag = true;
-                    break;
-                }
-                if (c2 < c1)
-                {
-                    c1 = c2;
-                    flag = true;
-                    break;
-                }
-                if (flag == true)
-                    break;
-            } while (1);
-            if (flag == true)
-                continue;
-        }
-
-    }
-}
-
-int vnsort1_incr(BIN_FILE_SIGNATURE _, INT_SIGNATURE, const char* ff)// фаза разделения серий
-{
-    FILE* A, * B, * C; /* файловые переменные */
-    int a1, a2;
-    /* файлы "B", "C" в функциях - временные */
-    int pb, pc; /* признаки записи в файлы разделения */
-    int p; /* p=1 - признак достижения конца исходного файла */
-
-    while (1)  /* цикл 1, цикл повторения фаз разделения и слияния */
-    /* Подготовительные операции */
-    {
-        if ((A = fopen(ff, "rb")) == NULL)
-        {
-            printf("\n Файл %s не открывается", ff);
-            system("pause");
-            return -1;
-        }
-        if ((B = fopen("B", "wb")) == NULL)
-        {
-            printf("\n Файл B не открывается");
-            system("pause");
-            return -1;
-        }
-        if ((C = fopen("C", "wb")) == NULL)
-        {
-            printf("\n Файл C не открывается");
-            system("pause");
-            return -1;
-        }
-        p = 0;
-        pb = 0;
-        pc = 0;
-
-        if (fread(&a1, sizeof(int), 1, A) == EOF)
-        {
-            printf("\n Сортируемый файл - пустой");
-            system("pause");
-            return -1;
-        }
-        else
-        {
-            fwrite(&a1, sizeof(int), 1, B);
-            pb = 1;
-        }
-        while (1) /* цикл 2, цикл формирования серий в файлах В и С */
-        {
-            while (1) /* цикл 3, цикл формирования серии в файле В */
-            {
-                fread(&a2, sizeof(int), 1, A);
-                if (feof(A)) {
-                    p = 1;
-                    break;
-                }
-                else {
-                    if (a2 >= a1)  /* запишем в серию в файле В */
-                    {
-                        fwrite(&a2, sizeof(int), 1, B);
-                        a1 = a2;
-                        pb = 1;
-                        continue;
-                    }
-                    else /* запишем первую запись новой серии в файле С */
-                    {
-                        fwrite(&a2, sizeof(int), 1, C);
-                        a1 = a2;
-                        pc = 1;
-                        break; /* выход из цикла 3 */
-                    }
-                }
-
-            }
-            if (p)
-                break;  /* выход из цикла 2 */
-            while (1) /* цикл 4, формирование серии в файле С */
-            {
-                fread(&a2, sizeof(int), 1, A);
-                if (feof(A)) {
-                    p = 1; break;
-                }
-                else {
-                    if (a2 >= a1)  /* запишем в серию в файле С */
-                    {
-                        fwrite(&a2, sizeof(int), 1, C);
-                        a1 = a2;
-                        pc = 1;
-                        continue;
-                    }
-                    else
-                    {
-                        fwrite(&a2, sizeof(int), 1, B);
-                        a1 = a2;
-                        pb = 1;
-                        break; /* выход из цикла 4 */
-                    }
-                }
-
-            }
-
-            if (p)
-                break; /* выход из цикла 2 */
-
-        }
-        fclose(A);
-        fclose(B);
-        fclose(C);
-        if (pb && pc)  /* исходный файл записан в оба файла разделения */
-            vnsort2_incr(BIN_FILE, INT_VAL, ff);  /* вызов функции слияния */
-        else
-        { /* Удаление вспомогательных файлов */
-            remove("B"); remove("C");
-            return 0;  /* конец сортировки */
-        }
-    }
-}
-int vnsort2_incr(BIN_FILE_SIGNATURE _, INT_SIGNATURE, const char* a)// фаза слияния
-{
-    bool flag;
-    FILE* A, * B, * C; /* файловые переменные */
-    int b1, b2, c1, c2; /* для считывания данных из файлов В и С */
-    int rb, rc; /* коды завершения операции считывания из файлов В и С*/
-    /* Подготовительные операции */
-    if ((A = fopen(a, "wb")) == NULL)
-    {
-        printf("\n Файл %s не открывается", a);
-        system("pause");
-        return -1;
-    }
-    if ((B = fopen("B", "rb")) == NULL)
-    {
-        printf("\n Файл B не открывается");
-        system("pause");
-        return -1;
-    }
-    if ((C = fopen("C", "rb")) == NULL)
-    {
-        printf("\n Файл C не открывается");
-        system("pause");
-        return -1;
-    }
-
-    rb = fread(&b2, sizeof(int), 1, B);
-    rc = fread(&c2, sizeof(int), 1, C);
-    b1 = b2;
-    c1 = c2;
-    while (1)
-    {
-        if ((rb > 0) && (rc <= 0))    // файл С закончился
-        {
-            fwrite(&b2, sizeof(int), 1, A);
-            while (fread(&b2, sizeof(int), 1, B) > 0)
-                fwrite(&b2, sizeof(int), 1, A);
-            fclose(A);
-            fclose(B);
-            fclose(C);
-            return 0;
-        }
-        else if ((rb <= 0) && (rc > 0)) // файл B закончился
-        {
-            fwrite(&c2, sizeof(int), 1, A);
-            while (fread(&c2, sizeof(int), 1, C) > 0)
-                fwrite(&c2, sizeof(int), 1, A);
-            fclose(A);
-            fclose(B);
-            fclose(C);
-            return 0;
-        }
-        else if ((rb <= 0) && (rc <= 0)) // оба файла закончились
-        {
-            fclose(A);
-            fclose(B);
-            fclose(C);
-            return 0;
-        }
-
-        if ((b2 >= b1) && (c2 >= c1)) /* обе сливаемые серии не исчерпаны */
-        {
-            if (b2 <= c2)
-            {
-                fwrite(&b2, sizeof(int), 1, A); b1 = b2;
-                rb = fread(&b2, sizeof(int), 1, B);
-                continue;
-            }
-            else
-            {
-                fwrite(&c2, sizeof(int), 1, A);
-                c1 = c2;
-                rc = fread(&c2, sizeof(int), 1, C);
+                rc = file_read(C, file_type, format, &c2);
                 continue;
             }
         }
@@ -1077,750 +610,9 @@ int vnsort2_incr(BIN_FILE_SIGNATURE _, INT_SIGNATURE, const char* a)// фаза 
             flag = false;
             do
             {
-                fwrite(&b2, sizeof(int), 1, A);
+                file_write(A, file_type, format_with_space, b2);
                 b1 = b2;
-                rb = fread(&b2, sizeof(int), 1, B);
-                if (rb <= 0)
-                {
-                    flag = true;
-                    break;
-                }
-                if (b2 < b1)
-                {
-                    b1 = b2;
-                    flag = true;
-                    break;
-                }
-                if (flag == true)
-                    break;
-            } while (1);
-            if (flag == true)
-                continue;
-        }
-        if ((b2 < b1) && (c2 >= c1)) // серия файла B кончилась
-        {
-            b1 = b2;
-            flag = false;
-            do
-            {
-                fwrite(&c2, sizeof(int), 1, A);
-                c1 = c2;
-                rc = fread(&c2, sizeof(int), 1, C);
-                if (rc <= 0)
-                {
-                    flag = true;
-                    break;
-                }
-                if (c2 < c1)
-                {
-                    c1 = c2;
-                    flag = true;
-                    break;
-                }
-                if (flag == true)
-                    break;
-            } while (1);
-            if (flag == true)
-                continue;
-        }
-
-    }
-}
-
-int vnsort1_incr(BIN_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* ff)// фаза разделения серий
-{
-    FILE* A, * B, * C; /* файловые переменные */
-    float a1, a2;
-    /* файлы "B", "C" в функциях - временные */
-    int pb, pc; /* признаки записи в файлы разделения */
-    int p; /* p=1 - признак достижения конца исходного файла */
-
-    while (1)  /* цикл 1, цикл повторения фаз разделения и слияния */
-    /* Подготовительные операции */
-    {
-        if ((A = fopen(ff, "rb")) == NULL)
-        {
-            printf("\n Файл %s не открывается", ff);
-            system("pause");
-            return -1;
-        }
-        if ((B = fopen("B", "wb")) == NULL)
-        {
-            printf("\n Файл B не открывается");
-            system("pause");
-            return -1;
-        }
-        if ((C = fopen("C", "wb")) == NULL)
-        {
-            printf("\n Файл C не открывается");
-            system("pause");
-            return -1;
-        }
-        p = 0;
-        pb = 0;
-        pc = 0;
-
-        if (fread(&a1, sizeof(float), 1, A) == EOF)
-        {
-            printf("\n Сортируемый файл - пустой");
-            system("pause");
-            return -1;
-        }
-        else
-        {
-            fwrite(&a1, sizeof(float), 1, B);
-            pb = 1;
-        }
-        while (1) /* цикл 2, цикл формирования серий в файлах В и С */
-        {
-            while (1) /* цикл 3, цикл формирования серии в файле В */
-            {
-                fread(&a2, sizeof(float), 1, A);
-                if (feof(A)) {
-                    p = 1;
-                    break;
-                }
-                else {
-                    if (a2 >= a1)  /* запишем в серию в файле В */
-                    {
-                        fwrite(&a2, sizeof(float), 1, B);
-                        a1 = a2;
-                        pb = 1;
-                        continue;
-                    }
-                    else /* запишем первую запись новой серии в файле С */
-                    {
-                        fwrite(&a2, sizeof(float), 1, C);
-                        a1 = a2;
-                        pc = 1;
-                        break; /* выход из цикла 3 */
-                    }
-                }
-
-            }
-            if (p)
-                break;  /* выход из цикла 2 */
-            while (1) /* цикл 4, формирование серии в файле С */
-            {
-                fread(&a2, sizeof(float), 1, A);
-                if (feof(A)) {
-                    p = 1; break;
-                }
-                else {
-                    if (a2 >= a1)  /* запишем в серию в файле С */
-                    {
-                        fwrite(&a2, sizeof(float), 1, C);
-                        a1 = a2;
-                        pc = 1;
-                        continue;
-                    }
-                    else
-                    {
-                        fwrite(&a2, sizeof(float), 1, B);
-                        a1 = a2;
-                        pb = 1;
-                        break; /* выход из цикла 4 */
-                    }
-                }
-
-            }
-
-            if (p)
-                break; /* выход из цикла 2 */
-
-        }
-        fclose(A);
-        fclose(B);
-        fclose(C);
-        if (pb && pc)  /* исходный файл записан в оба файла разделения */
-            vnsort2_incr(BIN_FILE, FLOAT_VAL, ff);  /* вызов функции слияния */
-        else
-        { /* Удаление вспомогательных файлов */
-            remove("B"); remove("C");
-            return 0;  /* конец сортировки */
-        }
-    }
-}
-int vnsort2_incr(BIN_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* a)// фаза слияния
-{
-    bool flag;
-    FILE* A, * B, * C; /* файловые переменные */
-    float b1, b2, c1, c2; /* для считывания данных из файлов В и С */
-    int rb, rc; /* коды завершения операции считывания из файлов В и С*/
-    /* Подготовительные операции */
-    if ((A = fopen(a, "wb")) == NULL)
-    {
-        printf("\n Файл %s не открывается", a);
-        system("pause");
-        return -1;
-    }
-    if ((B = fopen("B", "rb")) == NULL)
-    {
-        printf("\n Файл B не открывается");
-        system("pause");
-        return -1;
-    }
-    if ((C = fopen("C", "rb")) == NULL)
-    {
-        printf("\n Файл C не открывается");
-        system("pause");
-        return -1;
-    }
-
-    rb = fread(&b2, sizeof(float), 1, B);
-    rc = fread(&c2, sizeof(float), 1, C);
-    b1 = b2;
-    c1 = c2;
-    while (1)
-    {
-        if ((rb > 0) && (rc <= 0))    // файл С закончился
-        {
-            fwrite(&b2, sizeof(float), 1, A);
-            while (fread(&b2, sizeof(float), 1, B) > 0)
-                fwrite(&b2, sizeof(float), 1, A);
-            fclose(A);
-            fclose(B);
-            fclose(C);
-            return 0;
-        }
-        else if ((rb <= 0) && (rc > 0)) // файл B закончился
-        {
-            fwrite(&c2, sizeof(float), 1, A);
-            while (fread(&c2, sizeof(float), 1, C) > 0)
-                fwrite(&c2, sizeof(float), 1, A);
-            fclose(A);
-            fclose(B);
-            fclose(C);
-            return 0;
-        }
-        else if ((rb <= 0) && (rc <= 0)) // оба файла закончились
-        {
-            fclose(A);
-            fclose(B);
-            fclose(C);
-            return 0;
-        }
-
-        if ((b2 >= b1) && (c2 >= c1)) /* обе сливаемые серии не исчерпаны */
-        {
-            if (b2 <= c2)
-            {
-                fwrite(&b2, sizeof(float), 1, A); b1 = b2;
-                rb = fread(&b2, sizeof(float), 1, B);
-                continue;
-            }
-            else
-            {
-                fwrite(&c2, sizeof(float), 1, A);
-                c1 = c2;
-                rc = fread(&c2, sizeof(float), 1, C);
-                continue;
-            }
-        }
-
-        if ((b2 >= b1) && (c2 < c1)) // серия файла C кончилась
-        {
-            c1 = c2;
-            flag = false;
-            do
-            {
-                fwrite(&b2, sizeof(float), 1, A);
-                b1 = b2;
-                rb = fread(&b2, sizeof(float), 1, B);
-                if (rb <= 0)
-                {
-                    flag = true;
-                    break;
-                }
-                if (b2 < b1)
-                {
-                    b1 = b2;
-                    flag = true;
-                    break;
-                }
-                if (flag == true)
-                    break;
-            } while (1);
-            if (flag == true)
-                continue;
-        }
-        if ((b2 < b1) && (c2 >= c1)) // серия файла B кончилась
-        {
-            b1 = b2;
-            flag = false;
-            do
-            {
-                fwrite(&c2, sizeof(float), 1, A);
-                c1 = c2;
-                rc = fread(&c2, sizeof(float), 1, C);
-                if (rc <= 0)
-                {
-                    flag = true;
-                    break;
-                }
-                if (c2 < c1)
-                {
-                    c1 = c2;
-                    flag = true;
-                    break;
-                }
-                if (flag == true)
-                    break;
-            } while (1);
-            if (flag == true)
-                continue;
-        }
-
-    }
-}
-
-int vnsort1_decr(BIN_FILE_SIGNATURE _, INT_SIGNATURE, const char* ff)// фаза разделения серий
-{
-    FILE* A, * B, * C; /* файловые переменные */
-    int a1, a2;
-    /* файлы "B", "C" в функциях - временные */
-    int pb, pc; /* признаки записи в файлы разделения */
-    int p; /* p=1 - признак достижения конца исходного файла */
-
-    while (1)  /* цикл 1, цикл повторения фаз разделения и слияния */
-    /* Подготовительные операции */
-    {
-        if ((A = fopen(ff, "rb")) == NULL)
-        {
-            printf("\n Файл %s не открывается", ff);
-            system("pause");
-            return -1;
-        }
-        if ((B = fopen("B", "wb")) == NULL)
-        {
-            printf("\n Файл B не открывается");
-            system("pause");
-            return -1;
-        }
-        if ((C = fopen("C", "wb")) == NULL)
-        {
-            printf("\n Файл C не открывается");
-            system("pause");
-            return -1;
-        }
-        p = 0;
-        pb = 0;
-        pc = 0;
-
-        if (fread(&a1, sizeof(int), 1, A) == EOF)
-        {
-            printf("\n Сортируемый файл - пустой");
-            system("pause");
-            return -1;
-        }
-        else
-        {
-            fwrite(&a1, sizeof(int), 1, B);
-            pb = 1;
-        }
-        while (1) /* цикл 2, цикл формирования серий в файлах В и С */
-        {
-            while (1) /* цикл 3, цикл формирования серии в файле В */
-            {
-                fread(&a2, sizeof(int), 1, A);
-                if (feof(A)) {
-                    p = 1;
-                    break;
-                }
-                else {
-                    if (a2 <= a1)  /* запишем в серию в файле В */
-                    {
-                        fwrite(&a2, sizeof(int), 1, B);
-                        a1 = a2;
-                        pb = 1;
-                        continue;
-                    }
-                    else /* запишем первую запись новой серии в файле С */
-                    {
-                        fwrite(&a2, sizeof(int), 1, C);
-                        a1 = a2;
-                        pc = 1;
-                        break; /* выход из цикла 3 */
-                    }
-                }
-
-            }
-            if (p)
-                break;  /* выход из цикла 2 */
-            while (1) /* цикл 4, формирование серии в файле С */
-            {
-                fread(&a2, sizeof(int), 1, A);
-                if (feof(A)) {
-                    p = 1; break;
-                }
-                else {
-                    if (a2 <= a1)  /* запишем в серию в файле С */
-                    {
-                        fwrite(&a2, sizeof(int), 1, C);
-                        a1 = a2;
-                        pc = 1;
-                        continue;
-                    }
-                    else
-                    {
-                        fwrite(&a2, sizeof(int), 1, B);
-                        a1 = a2;
-                        pb = 1;
-                        break; /* выход из цикла 4 */
-                    }
-                }
-
-            }
-
-            if (p)
-                break; /* выход из цикла 2 */
-
-        }
-        fclose(A);
-        fclose(B);
-        fclose(C);
-        if (pb && pc)  /* исходный файл записан в оба файла разделения */
-            vnsort2_decr(BIN_FILE, INT_VAL, ff);  /* вызов функции слияния */
-        else
-        { /* Удаление вспомогательных файлов */
-            remove("B"); remove("C");
-            return 0;  /* конец сортировки */
-        }
-    }
-}
-int vnsort2_decr(BIN_FILE_SIGNATURE _, INT_SIGNATURE, const char* a)// фаза слияния
-{
-    bool flag;
-    FILE* A, * B, * C; /* файловые переменные */
-    int b1, b2, c1, c2; /* для считывания данных из файлов В и С */
-    int rb, rc; /* коды завершения операции считывания из файлов В и С*/
-    /* Подготовительные операции */
-    if ((A = fopen(a, "wb")) == NULL)
-    {
-        printf("\n Файл %s не открывается", a);
-        system("pause");
-        return -1;
-    }
-    if ((B = fopen("B", "rb")) == NULL)
-    {
-        printf("\n Файл B не открывается");
-        system("pause");
-        return -1;
-    }
-    if ((C = fopen("C", "rb")) == NULL)
-    {
-        printf("\n Файл C не открывается");
-        system("pause");
-        return -1;
-    }
-
-    rb = fread(&b2, sizeof(int), 1, B);
-    rc = fread(&c2, sizeof(int), 1, C);
-    b1 = b2;
-    c1 = c2;
-    while (1)
-    {
-        if ((rb > 0) && (rc <= 0))    // файл С закончился
-        {
-            fwrite(&b2, sizeof(int), 1, A);
-            while (fread(&b2, sizeof(int), 1, B) > 0)
-                fwrite(&b2, sizeof(int), 1, A);
-            fclose(A);
-            fclose(B);
-            fclose(C);
-            return 0;
-        }
-        else if ((rb <= 0) && (rc > 0)) // файл B закончился
-        {
-            fwrite(&c2, sizeof(int), 1, A);
-            while (fread(&c2, sizeof(int), 1, C) > 0)
-                fwrite(&c2, sizeof(int), 1, A);
-            fclose(A);
-            fclose(B);
-            fclose(C);
-            return 0;
-        }
-        else if ((rb <= 0) && (rc <= 0)) // оба файла закончились
-        {
-            fclose(A);
-            fclose(B);
-            fclose(C);
-            return 0;
-        }
-
-        if ((b2 <= b1) && (c2 <= c1)) /* обе сливаемые серии не исчерпаны */
-        {
-            if (b2 >= c2)
-            {
-                fwrite(&b2, sizeof(int), 1, A); b1 = b2;
-                rb = fread(&b2, sizeof(int), 1, B);
-                continue;
-            }
-            else
-            {
-                fwrite(&c2, sizeof(int), 1, A);
-                c1 = c2;
-                rc = fread(&c2, sizeof(int), 1, C);
-                continue;
-            }
-        }
-
-        if ((b2 <= b1) && (c2 > c1)) // серия файла C кончилась
-        {
-            c1 = c2;
-            flag = false;
-            do
-            {
-                fwrite(&b2, sizeof(int), 1, A);
-                b1 = b2;
-                rb = fread(&b2, sizeof(int), 1, B);
-                if (rb <= 0)
-                {
-                    flag = true;
-                    break;
-                }
-                if (b2 < b1)
-                {
-                    b1 = b2;
-                    flag = true;
-                    break;
-                }
-                if (flag == true)
-                    break;
-            } while (1);
-            if (flag == true)
-                continue;
-        }
-        if ((b2 > b1) && (c2 <= c1)) // серия файла B кончилась
-        {
-            b1 = b2;
-            flag = false;
-            do
-            {
-                fwrite(&c2, sizeof(int), 1, A);
-                c1 = c2;
-                rc = fread(&c2, sizeof(int), 1, C);
-                if (rc <= 0)
-                {
-                    flag = true;
-                    break;
-                }
-                if (c2 > c1)
-                {
-                    c1 = c2;
-                    flag = true;
-                    break;
-                }
-                if (flag == true)
-                    break;
-            } while (1);
-            if (flag == true)
-                continue;
-        }
-
-    }
-}
-
-int vnsort1_decr(BIN_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* ff)// фаза разделения серий
-{
-    FILE* A, * B, * C; /* файловые переменные */
-    float a1, a2;
-    /* файлы "B", "C" в функциях - временные */
-    int pb, pc; /* признаки записи в файлы разделения */
-    int p; /* p=1 - признак достижения конца исходного файла */
-
-    while (1)  /* цикл 1, цикл повторения фаз разделения и слияния */
-    /* Подготовительные операции */
-    {
-        if ((A = fopen(ff, "rb")) == NULL)
-        {
-            printf("\n Файл %s не открывается", ff);
-            system("pause");
-            return -1;
-        }
-        if ((B = fopen("B", "wb")) == NULL)
-        {
-            printf("\n Файл B не открывается");
-            system("pause");
-            return -1;
-        }
-        if ((C = fopen("C", "wb")) == NULL)
-        {
-            printf("\n Файл C не открывается");
-            system("pause");
-            return -1;
-        }
-        p = 0;
-        pb = 0;
-        pc = 0;
-
-        if (fread(&a1, sizeof(float), 1, A) == EOF)
-        {
-            printf("\n Сортируемый файл - пустой");
-            system("pause");
-            return -1;
-        }
-        else
-        {
-            fwrite(&a1, sizeof(float), 1, B);
-            pb = 1;
-        }
-        while (1) /* цикл 2, цикл формирования серий в файлах В и С */
-        {
-            while (1) /* цикл 3, цикл формирования серии в файле В */
-            {
-                fread(&a2, sizeof(float), 1, A);
-                if (feof(A)) {
-                    p = 1;
-                    break;
-                }
-                else {
-                    if (a2 <= a1)  /* запишем в серию в файле В */
-                    {
-                        fwrite(&a2, sizeof(float), 1, B);
-                        a1 = a2;
-                        pb = 1;
-                        continue;
-                    }
-                    else /* запишем первую запись новой серии в файле С */
-                    {
-                        fwrite(&a2, sizeof(float), 1, C);
-                        a1 = a2;
-                        pc = 1;
-                        break; /* выход из цикла 3 */
-                    }
-                }
-
-            }
-            if (p)
-                break;  /* выход из цикла 2 */
-            while (1) /* цикл 4, формирование серии в файле С */
-            {
-                fread(&a2, sizeof(float), 1, A);
-                if (feof(A)) {
-                    p = 1; break;
-                }
-                else {
-                    if (a2 <= a1)  /* запишем в серию в файле С */
-                    {
-                        fwrite(&a2, sizeof(float), 1, C);
-                        a1 = a2;
-                        pc = 1;
-                        continue;
-                    }
-                    else
-                    {
-                        fwrite(&a2, sizeof(float), 1, B);
-                        a1 = a2;
-                        pb = 1;
-                        break; /* выход из цикла 4 */
-                    }
-                }
-
-            }
-
-            if (p)
-                break; /* выход из цикла 2 */
-
-        }
-        fclose(A);
-        fclose(B);
-        fclose(C);
-        if (pb && pc)  /* исходный файл записан в оба файла разделения */
-            vnsort2_decr(BIN_FILE, FLOAT_VAL, ff);  /* вызов функции слияния */
-        else
-        { /* Удаление вспомогательных файлов */
-            remove("B"); remove("C");
-            return 0;  /* конец сортировки */
-        }
-    }
-}
-int vnsort2_decr(BIN_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* a)// фаза слияния
-{
-    bool flag;
-    FILE* A, * B, * C; /* файловые переменные */
-    float b1, b2, c1, c2; /* для считывания данных из файлов В и С */
-    int rb, rc; /* коды завершения операции считывания из файлов В и С*/
-    /* Подготовительные операции */
-    if ((A = fopen(a, "wb")) == NULL)
-    {
-        printf("\n Файл %s не открывается", a);
-        system("pause");
-        return -1;
-    }
-    if ((B = fopen("B", "rb")) == NULL)
-    {
-        printf("\n Файл B не открывается");
-        system("pause");
-        return -1;
-    }
-    if ((C = fopen("C", "rb")) == NULL)
-    {
-        printf("\n Файл C не открывается");
-        system("pause");
-        return -1;
-    }
-
-    rb = fread(&b2, sizeof(float), 1, B);
-    rc = fread(&c2, sizeof(float), 1, C);
-    b1 = b2;
-    c1 = c2;
-    while (1)
-    {
-        if ((rb > 0) && (rc <= 0))    // файл С закончился
-        {
-            fwrite(&b2, sizeof(float), 1, A);
-            while (fread(&b2, sizeof(float), 1, B) > 0)
-                fwrite(&b2, sizeof(float), 1, A);
-            fclose(A);
-            fclose(B);
-            fclose(C);
-            return 0;
-        }
-        else if ((rb <= 0) && (rc > 0)) // файл B закончился
-        {
-            fwrite(&c2, sizeof(float), 1, A);
-            while (fread(&c2, sizeof(float), 1, C) > 0)
-                fwrite(&c2, sizeof(float), 1, A);
-            fclose(A);
-            fclose(B);
-            fclose(C);
-            return 0;
-        }
-        else if ((rb <= 0) && (rc <= 0)) // оба файла закончились
-        {
-            fclose(A);
-            fclose(B);
-            fclose(C);
-            return 0;
-        }
-
-        if ((b2 <= b1) && (c2 <= c1)) /* обе сливаемые серии не исчерпаны */
-        {
-            if (b2 >= c2)
-            {
-                fwrite(&b2, sizeof(float), 1, A); b1 = b2;
-                rb = fread(&b2, sizeof(float), 1, B);
-                continue;
-            }
-            else
-            {
-                fwrite(&c2, sizeof(float), 1, A);
-                c1 = c2;
-                rc = fread(&c2, sizeof(float), 1, C);
-                continue;
-            }
-        }
-
-        if ((b2 <= b1) && (c2 > c1)) // серия файла C кончилась
-        {
-            c1 = c2;
-            flag = false;
-            do
-            {
-                fwrite(&b2, sizeof(float), 1, A);
-                b1 = b2;
-                rb = fread(&b2, sizeof(float), 1, B);
+                rb = file_read(B, file_type, format, &b2);
                 if (rb <= 0)
                 {
                     flag = true;
@@ -1838,15 +630,15 @@ int vnsort2_decr(BIN_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* a)// фаз�
             if (flag == true)
                 continue;
         }
-        if ((b2 > b1) && (c2 <= c1)) // серия файла B кончилась
+        if ((b2 < b1) && (c2 >= c1)) // серия файла B кончилась
         {
             b1 = b2;
             flag = false;
             do
             {
-                fwrite(&c2, sizeof(float), 1, A);
+                file_write(A, file_type, format_with_space, c2);
                 c1 = c2;
-                rc = fread(&c2, sizeof(float), 1, C);
+                rc = file_read(C, file_type, format, &c2);
                 if (rc <= 0)
                 {
                     flag = true;
@@ -1864,7 +656,6 @@ int vnsort2_decr(BIN_FILE_SIGNATURE _, FLOAT_SIGNATURE, const char* a)// фаз�
             if (flag == true)
                 continue;
         }
-
     }
 }
 
@@ -1875,7 +666,6 @@ void create_txt(const char* a)
     if ((A = fopen(a, "w")) == NULL)
     {
         printf("\n Файл %s не открывается", a);
-        system("pause");
         return;
     }
 
@@ -1910,7 +700,6 @@ void create_bin(const char* a)
     if ((A = fopen(a, "wb")) == NULL)
     {
         printf("\n Файл %s не открывается", a);
-        system("pause");
         return;
     }
 
@@ -1937,7 +726,7 @@ void create_bin(const char* a)
     fclose(A);
 }
 
-void concat_files(DAT_FILE_SIGNATURE _, const char* result_file, const char* fname, ...)
+void concat_files(const char* file_type, const char* result_file, const char* fname, ...)
 {
     va_list ptr;
     const char* name = fname;
@@ -1945,64 +734,53 @@ void concat_files(DAT_FILE_SIGNATURE _, const char* result_file, const char* fna
 
     FILE* file = NULL;
     FILE* result = NULL;
+    if (file_type == "dat") {
+        result = fopen(result_file, "w");
 
-    result = fopen(result_file, "w");
-
-    while (name) {
-        file = fopen(name, "r");
-        if (file != NULL)
-            if (name[0] == 'i')
-            {
-                int i;
-                while ((fscanf(file, "%d", &i) != EOF)) fprintf(result, " %d", i);
-            }
-            else
-            {
-                float i;
-                while ((fscanf(file, "%f", &i) != EOF)) fprintf(result, " %f", i);
-            }
-        name = va_arg(ptr, const char*);
-        fclose(file);
-    }
-    va_end(ptr);
-
-    fclose(result);
-    printf("Все текстовые файлы успешно объединены\n");
-}
-
-void concat_files(BIN_FILE_SIGNATURE _, const char* result_file, const char* fname, ...)
-{
-    va_list ptr;
-    FILE* file = NULL;
-    FILE* result = NULL;
-    const char* name = fname;
-    va_start(ptr, fname);
-
-    result = fopen(result_file, "wb");
-
-    while (name) {
-        file = fopen(name, "rb");
-        if (file != NULL) {
-            if (name[0] == 'i')  // Файл с целыми числами
-            {
-                int i;
-                while (fread(&i, sizeof(int), 1, file))
-                    fwrite(&i, sizeof(int), 1, result);
-            }
-            else // Файл с вещественными числами
-            {
-                float i;
-                while (fread(&i, sizeof(float), 1, file))
-                    fwrite(&i, sizeof(float), 1, result);
-            }
+        while (name) {
+            file = fopen(name, "r");
+            if (file != NULL)
+                if (name[0] == 'i')
+                {
+                    int i;
+                    while ((fscanf(file, "%d", &i)) != EOF) fprintf(result, " %d", i);
+                }
+                else
+                {
+                    float i;
+                    while ((fscanf(file, "%f", &i)) != EOF) fprintf(result, " %f", i);
+                }
+            name = va_arg(ptr, const char*);
+            fclose(file);
         }
-        name = va_arg(ptr, const char*);
-        fclose(file);
+        printf("Все текстовые файлы успешно объединены\n");
+    }
+    else {
+        result = fopen(result_file, "wb");
+
+        while (name) {
+            file = fopen(name, "rb");
+            if (file != NULL) {
+                if (name[0] == 'i')  // Файл с целыми числами
+                {
+                    int i;
+                    while (fread(&i, sizeof(int), 1, file)) fwrite(&i, sizeof(int), 1, result);
+                }
+                else // Файл с вещественными числами
+                {
+                    float i;
+                    while (fread(&i, sizeof(float), 1, file)) fwrite(&i, sizeof(float), 1, result);
+                }
+            }
+            name = va_arg(ptr, const char*);
+            fclose(file);
+        }
+        printf("Все бинарные файлы успешно объединены\n");
     }
     va_end(ptr);
 
     fclose(result);
-    printf("Данные из файлов скопированы в файл-результат.\n");
+    return;
 }
 
 void print_bin(const char* file_name)
@@ -2012,14 +790,30 @@ void print_bin(const char* file_name)
     if (file_name[0] == 'i')
     {
         int value;
-        while (fread(&value, sizeof(int), 1, file))
-            printf("%d ", value);
+        while (fread(&value, sizeof(int), 1, file)) printf("%i ", value);
     }
     else
     {
         float value;
-        while (fread(&value, sizeof(float), 1, file))
-            printf("%f ", value);
+        while (fread(&value, sizeof(float), 1, file)) printf("%f ", value);
+    }
+
+    fclose(file);
+}
+
+void print_txt(const char* file_name)
+{
+    FILE* file = fopen(file_name, "r");
+
+    if (file_name[0] == 'i')
+    {
+        int value;
+        while (fscanf(file, "%i", &value) != EOF) printf("%i ", value);
+    }
+    else if (file_name[0] == 'f')
+    {
+        float value;
+        while (fscanf(file, "%f", &value) != EOF) printf("%f ", value);
     }
 
     fclose(file);
@@ -2027,47 +821,19 @@ void print_bin(const char* file_name)
 
 void incr(const char* file_type, const char* f)
 {
-    if (file_type == "dat") // Сортировка по возрастанию для текстовых файлов
-        if (f[0] == 'i') vnsort1_incr(DAT_FILE, INT_VAL, f);
-        else vnsort1_incr(DAT_FILE, FLOAT_VAL, f);
-    else // Сортировка по возрастанию для бинарных файлов
-        if (f[0] == 'i')
-        {
-            vnsort1_incr(BIN_FILE, INT_VAL, f);
-            print_bin(f);
-        }
-        else 
-        {
-            vnsort1_incr(BIN_FILE, FLOAT_VAL, f);
-            print_bin(f);
-        }
+    if (f[0] == 'i') vnsort1_incr<int>(file_type, f);
+    else vnsort1_incr<float>(file_type, f);
 }
 
 void decr(const char* file_type, const char* f)
 {
-    if (file_type == "dat") // Сортировка по убыванию для текстовых файлов
-        if (f[0] == 'i') 
-            vnsort1_decr(DAT_FILE, INT_VAL, f);
-        else
-            vnsort1_decr(DAT_FILE, FLOAT_VAL, f);
-    else // Сортировка по убыванию для бинарных файлов
-        if (f[0] == 'i')
-        {
-            vnsort1_decr(BIN_FILE, INT_VAL, f);
-            print_bin(f);
-        }
-        else 
-        {
-            vnsort1_decr(BIN_FILE, FLOAT_VAL, f);
-            print_bin(f);
-        }
+    if (f[0] == 'i') vnsort1_decr<int>(file_type, f);
+    else vnsort1_decr<float>(file_type, f);
 }
 
-typedef void (*MENU)(const char*, const char*);
-
-void menu(const char* f, const char* file_type) // Меню для выбора типа сортировки
+void menu(const char* f, const char* file_type)
 {
-    int c = NULL;
+    int c;
     const char* options[] = { "1-Сортировка по возрастанию", "2-Сортировка по убыванию","3-ВЫХОД" };
     int i, num = 0,
         l = sizeof(options) / sizeof(char*); // Количество действий с программой
@@ -2091,7 +857,7 @@ void menu(const char* f, const char* file_type) // Меню для выбора 
             printf("\nСортировка успешно завершена\n");
             break;
         case 3:
-            exit(1);
+            return;
         default:
             printf("Ошибка! Введите число от 1 до %d", l);
             printf("\n");
